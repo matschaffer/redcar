@@ -271,7 +271,7 @@ module Redcar
         if mappings.size > 1
           builder = Menu::Builder.new do |m|
             mappings.each do |file_mapping|
-              m.item(file_mapping["name"]||file_mapping["command"]) do |i|
+              m.item(file_mapping["name"]||file_mapping["command"]) do
                 run_file_mapping(file_mapping)
               end
             end
