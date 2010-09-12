@@ -243,33 +243,42 @@ module Redcar
     end
     
     class RunEditTabCommand < Redcar::EditTabCommand
-      def file_mappings
+      def matching_file_runners
         project = Project::Manager.in_window(win)
         runnable_file_paths = project.config_files("runnables/*.json")
         
-        file_runners = []
-        runnable_file_paths.each do |path|
-          json = File.read(path)
-          this_file_runners = JSON(json)["file_runners"]
-          file_runners += this_file_runners || []
+        file_runners = runnable_file_paths.map do |file|
+          json = File.read(file)
+          JSON(json)["file_runners"] || []
+        end.flatten
+
+        file_runners.select do |file_runner|
+          tab.edit_view.document.mirror.path =~ Regexp.new(file_runner["regex"])
         end
-        file_runners
+      end
+      
+      def run_file_mapping(file_mapping)        
+        project = Project::Manager.in_window(win)
+        command_schema = file_mapping["command"]
+        output = file_mapping["output"] || "tab"
+        path = tab.edit_view.document.mirror.path
+        command = command_schema.gsub("__PATH__", path)
+        Runnables.run_process(project.home_dir, command, "Running #{File.basename(path)}", output)
       end
       
       def execute
-        project = Project::Manager.in_window(win)        
-        file_mappings.each do |file_mapping|
-          regex = Regexp.new(file_mapping["regex"])
-          if tab.edit_view.document.mirror.path =~ regex
-            command_schema = file_mapping["command"]
-            output = file_mapping["output"]
-            if output.nil?
-	            output = "tab"
+        mappings = matching_file_runners
+        if mappings.size > 1
+          builder = Menu::Builder.new do |m|
+            mappings.each do |file_mapping|
+              m.item(file_mapping["name"]||file_mapping["command"]) do |i|
+                run_file_mapping(file_mapping)
+              end
             end
-            path = tab.edit_view.document.mirror.path
-            command = command_schema.gsub("__PATH__", path)
-            Runnables.run_process(project.home_dir,command, "Running #{File.basename(path)}", output)
           end
+          Redcar.app.focussed_window.popup_menu_with_numbers(builder.menu)
+        else
+          run_file_mapping mappings.first
         end
       end
     end
