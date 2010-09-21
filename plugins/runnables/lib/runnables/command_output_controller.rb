@@ -18,14 +18,14 @@ module Redcar
       end
       
       def ask_before_closing
-        if @shell
-          "This tab contains an unfinished process. \n\nKill the process and close?"
+        if @pid
+          "This tab is still running.\n\nDo you want to stop the process before closing the tab?"
         end
       end
       
       def close
-        if @shell
-          Process.kill(9, @shell.pid.to_i + 1)
+        if @pid
+          Process.kill(9, @pid)
         end
       end
       
@@ -86,6 +86,10 @@ module Redcar
           
           # JRuby-specific
           pid, input, output, error = IO.popen4(cmd)
+          
+          # Increment pid to get the command, not the `cd`
+          @pid = pid + 1
+          
           @stdout_thread = output_thread(:stdout, output)
           @stderr_thread = output_thread(:stderr, error)
           
