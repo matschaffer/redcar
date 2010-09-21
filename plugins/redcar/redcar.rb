@@ -287,15 +287,18 @@ Redcar.environment: #{Redcar.environment}
             close_tab
           end
         elsif tab.is_a?(HtmlTab)
-          if tab.html_view.controller and message = tab.html_view.controller.ask_before_closing
+          controller = tab.html_view.controller
+          if controller and message = controller.ask_before_closing
             result = Application::Dialog.message_box(
               message,
               :buttons => :yes_no_cancel
             )
             case result
             when :yes
+              controller.yes_close
               close_tab
             when :no
+              controller.no_close
               close_tab
             when :cancel
             end

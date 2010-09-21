@@ -14,7 +14,17 @@ module Redcar
       nil
     end
     
-    # Override this to run code right before the tab is closed.
+    # Override this to run code if the user clicks "Yes" on the close dialog
+    def yes_close
+      nil
+    end
+    
+    # Override this to run code if the user clicks "No" on the close dialog
+    def no_close
+      nil
+    end
+    
+    # Override this to run code before closing regardless of yes/no closing 
     def close
       nil
     end

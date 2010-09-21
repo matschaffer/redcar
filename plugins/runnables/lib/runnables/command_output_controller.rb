@@ -23,7 +23,7 @@ module Redcar
         end
       end
       
-      def close
+      def yes_close
         if @pid
           Process.kill(9, @pid)
         end
