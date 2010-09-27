@@ -120,6 +120,7 @@ module Redcar
 
       def end_output_block
         @end = Time.now
+        @pid = nil
         append_to(header_container, <<-HTML)
           <span class="completed-message">
             Completed at #{format_time(@end)}. (Took #{@end - @start} seconds)
