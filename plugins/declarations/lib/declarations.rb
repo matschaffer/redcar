@@ -3,6 +3,7 @@ require 'declarations/completion_source'
 require 'declarations/file'
 require 'declarations/parser'
 require 'declarations/select_tag_dialog'
+require 'declarations/commands'
 require 'tempfile'
 
 module Redcar
@@ -11,17 +12,23 @@ module Redcar
       Menu::Builder.build do
         sub_menu "Project" do
           item "Go to declaration", :command => Declarations::GoToTagCommand, :priority => 30
+          item "Go to last location", :command => Declarations::GoBackCommand, :priority => 31
+          item "Go to next location", :command => Declarations::GoForwardCommand, :priority => 32
         end
       end
     end
 
     def self.keymaps
       linwin = Keymap.build("main", [:linux, :windows]) do
-        link "Ctrl+G", Declarations::GoToTagCommand
+        link "Ctrl+G",         Declarations::GoToTagCommand
+        link "Ctrl+Alt+Left",  Declarations::GoBackCommand
+        link "Ctrl+Alt+Right", Declarations::GoForwardCommand
       end
 
       osx = Keymap.build("main", :osx) do
-        link "Cmd+G", Declarations::GoToTagCommand
+        link "Cmd+G",         Declarations::GoToTagCommand
+        link "Cmd+Alt+Left",  Declarations::GoBackCommand
+        link "Cmd+Alt+Right", Declarations::GoForwardCommand
       end
 
       [linwin, osx]
@@ -75,66 +82,45 @@ module Redcar
       end
     end
 
-	def self.match_kind(path, regex)
+    def self.match_kind(path, regex)
       Declarations::Parser.new.match_kind(path, regex)
-	end
+    end
 
     def self.clear_tags_for_path(path)
       @tags_for_path ||= {}
       @tags_for_path.delete(path)
     end
 
+    def self.current_location
+      document = Redcar::EditView.focussed_edit_view.document
+      [document.path, document.cursor_offset]
+    end
+    
+    def self.go_to_location(location)
+      path, offset = location
+      Project::Manager.open_file(path)
+      Redcar::EditView.focussed_edit_view.document.cursor_offset = offset
+    end
+    
+    def self.go_back
+      return unless location = @history.pop
+      @future.push(current_location)
+      go_to_location(location)
+    end
+    
+    def self.go_forward
+      return unless location = @future.pop
+      @history.push(current_location)
+      go_to_location(location)
+    end
+
     def self.go_to_definition(match)
+      (@history ||= []).push(current_location)
+      @future = []
       path = match[:file]
       Project::Manager.open_file(path)
       regexp = Regexp.new(Regexp.escape(match[:match]))
       DocumentSearch::FindNextRegex.new(regexp, true).run
-    end
-
-    class GoToTagCommand < EditTabCommand
-
-      def execute
-        if Project::Manager.focussed_project.remote?
-          Application::Dialog.message_box("Go to declaration doesn't work in remote projects yet :(")
-          return
-        end
-          
-        if doc.selection?
-          handle_tag(doc.selected_text)
-        else
-          range = doc.current_word_range
-          handle_tag(doc.get_slice(range.first, range.last))
-        end
-      end
-
-      def handle_tag(token = '')
-        tags_path = Declarations.file_path(Project::Manager.focussed_project)
-        unless ::File.exist?(tags_path)
-          Application::Dialog.message_box("The declarations file 'tags' has not been generated yet.")
-          return
-        end
-        matches = find_tag(tags_path, token)
-        case matches.size
-        when 0
-          Application::Dialog.message_box("There is no declaration for '#{token}' in the 'tags' file.")
-        when 1
-          Redcar::Declarations.go_to_definition(matches.first)
-        else
-          open_select_tag_dialog(matches)
-        end
-      end
-
-      def find_tag(tags_path, tag)
-        Declarations.tags_for_path(tags_path)[tag] || []
-      end
-
-      def open_select_tag_dialog(matches)
-        Declarations::SelectTagDialog.new(matches).open
-      end
-
-      def log(message)
-        puts("==> Ctags: #{message}")
-      end
     end
   end
 end
