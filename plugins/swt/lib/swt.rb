@@ -18,6 +18,7 @@ module Swt
       jar = 'win32'
     end
     jar << '64' if %w(amd64 x86_64 i686).include? Config::CONFIG["host_cpu"]
+    jar
   end
 
   require File.join(Redcar.asset_dir, "swt/" + Swt.jar_path)
