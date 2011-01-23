@@ -10,13 +10,14 @@ module Swt
   
   def self.jar_path
     case Config::CONFIG["host_os"]
-    when /(darwin|linux)/i
-      jar = ($1 == "linux" ? "linux" : "osx")
-      jar << '64' if %w(amd64 x86_64).include? Config::CONFIG["host_cpu"]
-      jar
+    when /linux/i
+      jar = "linux"
+    when /darwin/i
+      jar = "osx"
     when /windows|mswin/i
-      'win32'
+      jar = 'win32'
     end
+    jar << '64' if %w(amd64 x86_64 i686).include? Config::CONFIG["host_cpu"]
   end
 
   require File.join(Redcar.asset_dir, "swt/" + Swt.jar_path)

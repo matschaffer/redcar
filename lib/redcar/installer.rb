@@ -69,6 +69,7 @@ module Redcar
         :windows => {
           "http://releases.mozilla.org/pub/mozilla.org/xulrunner/releases/#{xulrunner_version}/runtimes/xulrunner-#{xulrunner_version}.en-US.win32.zip" => "xulrunner-#{xulrunner_version}.en-US.win32.zip",
           "http://redcar.s3.amazonaws.com/swt/win32.jar"   => nil,
+          "http://redcar.s3.amazonaws.com/swt/win3264.jar" => nil
         },
         :linux => {
           "http://redcar.s3.amazonaws.com/swt/linux.jar"     => nil,
